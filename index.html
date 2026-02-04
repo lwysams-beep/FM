@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>佛教正覺蓮社學校 - 足球校隊經理人儀表板 2026 (春季更新版)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Grass Green & Professional Grey -->
+    <!-- 
+         Update v8.0 Log:
+         1. Added "Interest Class Term 2" (Feb-May).
+         2. Added "School Team Phase 3" (Feb-Apr).
+         3. Added "School Team Dev Phase 2" (Feb-Mar).
+         4. Confirmed Thursday Schedules: Seed Team at King Shing vs School Dev at Basketball Court (No Conflict).
+    -->
+
+    <style>
+        body { font-family: 'Noto Sans HK', sans-serif; background-color: #f3f4f6; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .conflict-row { border-left: 4px solid #ef4444; background-color: #fef2f2; }
+        .cancelled-row { text-decoration: line-through; color: #9ca3af; background-color: #f3f4f6; }
+        .special-row { border-left: 4px solid #f59e0b; background-color: #fffbeb; }
+        .venue-change-row { border-left: 4px solid #10b981; background-color: #ecfdf5; }
+        .past-row { color: #6b7280; background-color: #f9fafb; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navigation -->
+    <nav class="bg-green-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">⚽</span>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">足球校隊經理人儀表板</h1>
+                    <p class="text-xs text-green-200">2026 春季更新版 | v8.0</p>
+                </div>
+            </div>
+            <div class="hidden md:flex space-x-6 text-sm font-medium">
+                <button onclick="switchTab('dashboard')" class="hover:text-green-200 transition">總覽 & 提示</button>
+                <button onclick="switchTab('schedule')" class="hover:text-green-200 transition">全學年日程表</button>
+                <button onclick="switchTab('payroll')" class="hover:text-green-200 transition">教練薪酬紀錄</button>
+            </div>
+            <!-- Mobile Menu Button -->
+            <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-green-800 p-4 space-y-2">
+            <button onclick="switchTab('dashboard')" class="block w-full text-left py-2 px-3 hover:bg-green-700 rounded">總覽 & 提示</button>
+            <button onclick="switchTab('schedule')" class="block w-full text-left py-2 px-3 hover:bg-green-700 rounded">全學年日程表</button>
+            <button onclick="switchTab('payroll')" class="block w-full text-left py-2 px-3 hover:bg-green-700 rounded">教練薪酬紀錄</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container mx-auto px-4 py-6">
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="space-y-6 animate-fade-in">
+            
+            <!-- Intro -->
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-600">
+                <h2 class="text-2xl font-bold mb-2">經理人概況 (Manager Overview)</h2>
+                <p class="text-gray-600">系統已整合 <span class="font-bold">校隊(第三期)、興趣班(下學期)及校隊加強班(第二期)</span> 的資料。目前的日程表已覆蓋至 2026年5月。</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-bold uppercase">全學年總課堂</p>
+                        <p class="text-3xl font-bold text-gray-700" id="stat-total-sessions">0</p>
+                        <p class="text-xs text-green-600 font-bold" id="stat-future-sessions">其中 0 堂未上</p>
+                    </div>
+                    <div class="text-3xl">📅</div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-bold uppercase">嚴重撞期警示</p>
+                        <p class="text-3xl font-bold text-green-600" id="stat-conflicts">0</p>
+                        <p class="text-xs text-gray-400">已全數解決</p>
+                    </div>
+                    <div class="text-3xl">✅</div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-bold uppercase">年度總時數</p>
+                        <p class="text-3xl font-bold text-blue-600" id="stat-hours">0</p>
+                         <p class="text-xs text-gray-400">所有教練合計</p>
+                    </div>
+                    <div class="text-3xl">⏱️</div>
+                </div>
+            </div>
+
+            <!-- Alerts Section (Focus on Future) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Info Column -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <span class="text-2xl mr-2">ℹ️</span>
+                        <h3 class="text-xl font-bold text-blue-800">最新日程更新 (Schedule Updates)</h3>
+                    </div>
+                    <div class="space-y-3">
+                         <div class="flex items-start bg-white p-3 rounded border-l-4 border-green-500 shadow-sm">
+                            <span class="text-green-500 font-bold mr-2 text-lg">✓</span>
+                            <div>
+                                <p class="font-bold text-green-900">星期四運作正常</p>
+                                <p class="text-sm text-gray-700">2-3月逢星期四：種子隊於<span class="font-bold text-green-700">景盛球場</span>，校隊加強班於<span class="font-bold text-blue-700">籃球場</span>。地點已分開，無撞期。</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start bg-white p-3 rounded border-l-4 border-blue-500 shadow-sm">
+                            <span class="text-blue-500 font-bold mr-2 text-lg">📅</span>
+                            <div>
+                                <p class="font-bold text-blue-900">新課程加入</p>
+                                <p class="text-sm text-gray-700">已加入：興趣班(2-5月)、校隊第三期(2-4月)、校隊加強班第二期(2-3月)。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critical/Warning Column -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <span class="text-2xl mr-2">🚨</span>
+                        <h3 class="text-xl font-bold text-red-800">取消及注意 (Reminders)</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-start bg-white p-3 rounded border-l-4 border-gray-500 shadow-sm">
+                            <span class="text-gray-500 font-bold mr-2 text-lg">x</span>
+                            <div>
+                                <p class="font-bold text-gray-900">歷史取消紀錄</p>
+                                <p class="text-sm text-gray-700">1月12日 (星期一) 之種子隊加強班已取消。</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start bg-white p-3 rounded border-l-4 border-yellow-500 shadow-sm">
+                            <span class="text-yellow-500 font-bold mr-2 text-lg">⏰</span>
+                            <div>
+                                <p class="font-bold text-yellow-900">特別時間安排 (已過)</p>
+                                <p class="text-sm text-gray-700">1月22日 (星期四) 校隊加強班提早至 <span class="font-bold">14:00 - 16:00</span>。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Coach Workload -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-bold mb-4 text-gray-700 text-center">教練年度工時分佈 (2025/26學年)</h3>
+                    <div class="chart-container">
+                        <canvas id="coachChart"></canvas>
+                    </div>
+                </div>
+                <!-- Chart 2: Sessions per Team -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-bold mb-4 text-gray-700 text-center">各梯隊年度課堂數量統計</h3>
+                    <div class="chart-container">
+                        <canvas id="teamChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCHEDULE TAB -->
+        <div id="tab-schedule" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow p-6 border-b-4 border-blue-500">
+                <h2 class="text-2xl font-bold mb-2">全學年綜合訓練日程 (Master Schedule)</h2>
+                <p class="text-gray-600">包含由2025年9月至2026年5月的所有數據。灰色為已過去課堂，綠色/白色為未來課堂。</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow items-center">
+                <label class="font-bold text-sm text-gray-600">篩選:</label>
+                <select id="coachFilter" onchange="renderSchedule()" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                    <option value="all">所有教練</option>
+                    <option value="Tang">鄧紹賢教練</option>
+                    <option value="Wong">黃琛瑜教練</option>
+                    <option value="Li">李禧頌教練</option>
+                </select>
+                <select id="teamFilter" onchange="renderSchedule()" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                    <option value="all">所有隊伍</option>
+                    <option value="Seed">種子隊</option>
+                    <option value="School">校隊</option>
+                    <option value="DevSeed">種子加強班 (一)</option>
+                    <option value="DevSchool">校隊加強班 (四)</option>
+                    <option value="Interest">興趣班</option>
+                </select>
+                 <select id="timeFilter" onchange="renderSchedule()" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                    <option value="all">全部時間</option>
+                    <option value="future">將來 (2026年2月起)</option>
+                    <option value="past">過去</option>
+                </select>
+                <div class="flex items-center gap-2 text-xs ml-auto">
+                    <span class="flex items-center"><span class="w-3 h-3 bg-green-100 border border-green-500 mr-1"></span> 景盛</span>
+                    <span class="flex items-center"><span class="w-3 h-3 bg-gray-200 line-through mr-1 text-gray-400">T</span> 取消</span>
+                     <span class="flex items-center"><span class="w-3 h-3 bg-gray-100 mr-1 text-gray-400"></span> 過去</span>
+                </div>
+            </div>
+
+            <!-- Schedule Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 uppercase text-xs leading-normal">
+                            <th class="py-3 px-6 text-left">日期</th>
+                            <th class="py-3 px-6 text-left">星期</th>
+                            <th class="py-3 px-6 text-left">時間</th>
+                            <th class="py-3 px-6 text-left">隊伍</th>
+                            <th class="py-3 px-6 text-left">教練</th>
+                            <th class="py-3 px-6 text-left">地點</th>
+                            <th class="py-3 px-6 text-center">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody" class="text-gray-600 text-sm font-light">
+                        <!-- JS will populate this -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAYROLL TAB -->
+        <div id="tab-payroll" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow p-6 border-b-4 border-purple-500">
+                <h2 class="text-2xl font-bold mb-2">教練年度薪酬紀錄 (Yearly Payroll)</h2>
+                <p class="text-gray-600">此頁面計算由2025年9月至今的累積總時數。適合用作年度預算檢討。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="payrollContainer">
+                <!-- JS will populate payroll cards here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-400 py-6 text-center text-sm mt-8">
+        <p>© 2026 佛教正覺蓮社學校 足球部. Generated for administrative use.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Data Source (Updated v8.0) ---
+        const sessions = [
+            // --- 2025 HISTORICAL DATA (Kept for records) ---
+            { date: '2025-09-09', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(1)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-09-16', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(1)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-09-23', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(1)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-09-30', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(1)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-09', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-14', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past', note: '補堂' },
+            { date: '2025-10-16', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-21', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-23', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-28', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-30', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-13', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-20', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(2)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-09-10', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-09-17', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-09-24', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-04', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-08', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-11', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-15', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-18', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-22', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-25', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(1)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-11-25', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-27', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-02', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-04', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-09', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-11', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-16', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-18', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Tang', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2026-01-06', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-12', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-11-19', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-11-22', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-11-26', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-11-29', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-12-03', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-12-10', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-12-17', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2025-10-13', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-20', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-10-27', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-17', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-24', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-01', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-15', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-12-22', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2025-11-27', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, status: 'past' },
+            { date: '2025-12-11', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, status: 'past' },
+            { date: '2025-12-18', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, status: 'past' },
+            { date: '2025-10-08', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-10-15', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-10-22', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-11-12', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-11-19', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-11-26', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-12-03', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-12-10', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2025-12-17', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2026-01-05', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(1)補', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2026-01-08', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, status: 'past' },
+            { date: '2026-01-08', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(3)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' }, // Treated as past for current context Feb
+            { date: '2026-01-07', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2026-01-07', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(1)', coach: 'Soaring', location: '雨天操場', hours: 1.5, status: 'past' },
+            { date: '2026-01-12', day: '一', time: '--', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '--', hours: 0, status: 'cancelled', note: '❌ 取消' },
+            { date: '2026-01-13', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2026-01-14', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2026-01-15', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, status: 'past' },
+            { date: '2026-01-15', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' },
+            { date: '2026-01-22', day: '四', time: '14:00-16:00', team: 'DevSchool', teamLabel: '校隊加強(1)', coach: 'Li', location: '籃球場', hours: 2.0, note: '⏰特別時間', status: 'special' },
+            { date: '2026-01-24', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2026-01-26', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2026-01-27', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Wong', location: '籃球場', hours: 1.5, status: 'past' },
+            { date: '2026-01-28', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+            { date: '2026-01-29', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' },
+            { date: '2026-01-31', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(2)', coach: 'Tang', location: '籃球場/百福', hours: 1.5, status: 'past' },
+
+            // --- 2026 NEW & FUTURE DATA (Feb 2026 onwards) ---
+            
+            // Interest Class Term 2 (Feb-May)
+            { date: '2026-02-11', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-02-25', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-03-04', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-03-25', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-04-01', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-04-15', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-04-22', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-04-29', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-05-06', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+            { date: '2026-05-13', day: '三', time: '15:40-17:10', team: 'Interest', teamLabel: '足球興趣班(2)', coach: 'Soaring', location: '雨天操場', hours: 1.5 },
+
+            // School Team Phase 3 (Feb-Apr)
+            { date: '2026-02-04', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-02-11', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-02-25', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-02-28', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-03-04', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-03-21', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-03-25', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-03-28', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-04-15', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-04-22', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-04-25', day: '六', time: '08:00-09:30', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+            { date: '2026-04-29', day: '三', time: '15:40-17:10', team: 'School', teamLabel: '足球校隊(3)', coach: 'Tang', location: '籃球場/百福', hours: 1.5 },
+
+            // School Dev Team Phase 2 (Thu)
+            { date: '2026-02-05', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+            { date: '2026-02-12', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+            { date: '2026-02-26', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+            { date: '2026-03-05', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+            { date: '2026-03-19', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+            { date: '2026-03-26', day: '四', time: '15:35-17:35', team: 'DevSchool', teamLabel: '校隊加強(2)', coach: 'Li', location: '籃球場', hours: 2.0 },
+
+            // Seed Team Phase 4 (Remaining)
+            { date: '2026-02-03', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Wong', location: '籃球場', hours: 1.5 },
+            { date: '2026-02-05', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' },
+            { date: '2026-02-10', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Wong', location: '籃球場', hours: 1.5 },
+            { date: '2026-02-26', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' },
+            { date: '2026-03-03', day: '二', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Wong', location: '籃球場', hours: 1.5 },
+            { date: '2026-03-05', day: '四', time: '15:40-17:10', team: 'Seed', teamLabel: '種子隊(4)', coach: 'Tang', location: '景盛球場', hours: 1.5, status: 'venue-change' },
+
+            // Seed Dev Team Phase 2 (Remaining)
+            { date: '2026-02-02', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+            { date: '2026-02-09', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+            { date: '2026-03-02', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+            { date: '2026-03-23', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+            { date: '2026-03-30', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+            { date: '2026-04-20', day: '一', time: '15:35-17:05', team: 'DevSeed', teamLabel: '種子加強(2)', coach: 'Li', location: '籃球場', hours: 1.5 },
+        ];
+
+        // Sort sessions by date
+        sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const coachNames = {
+            'Tang': '鄧紹賢教練 (Tang)',
+            'Wong': '黃琛瑜教練 (Wong)',
+            'Li': '李禧頌教練 (Li)',
+            'Soaring': '翱翔足球 (Soaring)'
+        };
+
+        function switchTab(tabName) {
+            ['dashboard', 'schedule', 'payroll'].forEach(id => {
+                document.getElementById(`tab-${id}`).classList.add('hidden');
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function calculateStats() {
+            // Update "today" to reflect we are planning for Feb
+            const today = new Date('2026-02-01');
+            const futureSessions = sessions.filter(s => new Date(s.date) >= today && s.status !== 'cancelled');
+            const conflicts = sessions.filter(s => s.note && s.note.includes('撞期')).length;
+            
+            let totalHours = sessions.reduce((acc, curr) => {
+                return (curr.status !== 'cancelled') ? acc + (curr.hours || 0) : acc;
+            }, 0);
+
+            document.getElementById('stat-total-sessions').innerText = sessions.length;
+            document.getElementById('stat-future-sessions').innerText = `其中 ${futureSessions.length} 堂未上 (2月起)`;
+            document.getElementById('stat-conflicts').innerText = conflicts; 
+            document.getElementById('stat-hours').innerText = totalHours.toFixed(1);
+        }
+
+        function renderSchedule() {
+            const tableBody = document.getElementById('scheduleTableBody');
+            tableBody.innerHTML = '';
+
+            const coachFilter = document.getElementById('coachFilter').value;
+            const teamFilter = document.getElementById('teamFilter').value;
+            const timeFilter = document.getElementById('timeFilter').value;
+            const today = new Date('2026-02-01'); // Treat Feb 1 as current cut-off for "Future" view
+
+            sessions.forEach(session => {
+                const sessionDate = new Date(session.date);
+
+                // Filters
+                if (coachFilter !== 'all' && session.coach !== coachFilter) return;
+                if (teamFilter !== 'all' && session.team !== teamFilter) return;
+                if (timeFilter === 'future' && sessionDate < today) return;
+                if (timeFilter === 'past' && sessionDate >= today) return;
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 hover:bg-gray-50';
+
+                let statusBadge = `<span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-xs">正常</span>`;
+                
+                if (session.status === 'cancelled') {
+                    tr.classList.add('cancelled-row');
+                    statusBadge = `<span class="bg-gray-200 text-gray-600 py-1 px-3 rounded-full text-xs">取消</span>`;
+                } else if (session.status === 'past') {
+                    tr.classList.add('past-row');
+                    statusBadge = `<span class="bg-gray-100 text-gray-500 py-1 px-3 rounded-full text-xs">已完成</span>`;
+                } else if (session.status === 'special') {
+                    tr.classList.add('special-row');
+                    statusBadge = `<span class="bg-yellow-100 text-yellow-800 py-1 px-3 rounded-full text-xs">特別時間</span>`;
+                } else if (session.status === 'venue-change') {
+                    tr.classList.add('venue-change-row');
+                    statusBadge = `<span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-xs font-bold">📍 景盛</span>`;
+                }
+
+                if (sessionDate < today && session.status !== 'cancelled' && session.status !== 'past') {
+                     tr.classList.add('past-row');
+                     statusBadge = `<span class="bg-gray-100 text-gray-500 py-1 px-3 rounded-full text-xs">已完成</span>`;
+                }
+
+                const coachName = coachNames[session.coach] || session.coach;
+
+                tr.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${session.date}</td>
+                    <td class="py-3 px-6 text-left">${session.day}</td>
+                    <td class="py-3 px-6 text-left font-medium">${session.time}</td>
+                    <td class="py-3 px-6 text-left">${session.teamLabel}</td>
+                    <td class="py-3 px-6 text-left">${coachName}</td>
+                    <td class="py-3 px-6 text-left">${session.location}</td>
+                    <td class="py-3 px-6 text-center">${statusBadge}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderPayroll() {
+            const container = document.getElementById('payrollContainer');
+            container.innerHTML = '';
+            const coaches = ['Tang', 'Wong', 'Li'];
+
+            coaches.forEach(coach => {
+                const coachSessions = sessions.filter(s => s.coach === coach);
+                let totalHrs = 0;
+                let sessionCount = 0;
+                const today = new Date('2026-02-01');
+
+                let rowsHtml = '';
+                [...coachSessions].reverse().forEach(s => {
+                    const isCancelled = s.status === 'cancelled';
+                    if (!isCancelled) {
+                        totalHrs += s.hours;
+                        sessionCount++;
+                    }
+                    
+                    const isPast = new Date(s.date) < today;
+                    const rowClass = isPast ? 'text-gray-600' : 'font-bold text-green-700';
+                    
+                    rowsHtml += `
+                        <li class="flex justify-between py-1 text-sm ${isCancelled ? 'line-through text-gray-400' : ''}">
+                            <span class="${rowClass}">${s.date} <span class="text-xs text-gray-400">(${s.teamLabel})</span></span>
+                            <span>${s.hours} hr</span>
+                        </li>
+                    `;
+                });
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow overflow-hidden flex flex-col h-[500px]'; 
+                card.innerHTML = `
+                    <div class="bg-gray-50 p-4 border-b">
+                        <h3 class="font-bold text-lg text-gray-800">${coachNames[coach]}</h3>
+                        <p class="text-xs text-gray-500">2025/26 年度累計</p>
+                    </div>
+                    <div class="p-4 flex-grow overflow-hidden">
+                        <ul class="space-y-2 h-full overflow-y-auto pr-2">
+                            ${rowsHtml}
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 p-4 border-t flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">年度總時數</p>
+                            <p class="text-xl font-bold text-green-700">${totalHrs.toFixed(1)} hrs</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-xs text-gray-500 font-bold uppercase">總堂數</p>
+                            <p class="font-bold text-gray-700">${sessionCount} 堂</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderCharts() {
+            const coachHours = {};
+            const teamSessions = {};
+
+            sessions.forEach(s => {
+                if (s.status === 'cancelled') return;
+                if (!coachHours[s.coach]) coachHours[s.coach] = 0;
+                coachHours[s.coach] += s.hours;
+                
+                let chartLabel = s.team;
+                if(s.team === 'School') chartLabel = '校隊';
+                if(s.team === 'Seed') chartLabel = '種子隊';
+                if(s.team === 'DevSeed') chartLabel = '種子加強(一)';
+                if(s.team === 'DevSchool') chartLabel = '校隊加強(四)';
+                if(s.team === 'Interest') chartLabel = '興趣班';
+
+                if (!teamSessions[chartLabel]) teamSessions[chartLabel] = 0;
+                teamSessions[chartLabel] += 1;
+            });
+
+            const ctx1 = document.getElementById('coachChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(coachHours).map(k => coachNames[k].split(' ')[0]), 
+                    datasets: [{
+                        data: Object.values(coachHours),
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            const ctx2 = document.getElementById('teamChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(teamSessions),
+                    datasets: [{
+                        label: '課堂數量',
+                        data: Object.values(teamSessions),
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateStats();
+            renderSchedule();
+            renderPayroll();
+            renderCharts();
+        });
+    </script>
+</body>
+</html>
