@@ -423,8 +423,8 @@
         }
 
         function calculateStats() {
-            // Update "today" to reflect we are planning for Feb
-            const today = new Date('2026-02-01');
+            // Update "today"
+            const today = new Date();
             const futureSessions = sessions.filter(s => new Date(s.date) >= today && s.status !== 'cancelled');
             const conflicts = sessions.filter(s => s.note && s.note.includes('撞期')).length;
             
@@ -445,7 +445,7 @@
             const coachFilter = document.getElementById('coachFilter').value;
             const teamFilter = document.getElementById('teamFilter').value;
             const timeFilter = document.getElementById('timeFilter').value;
-            const today = new Date('2026-02-01'); // Treat Feb 1 as current cut-off for "Future" view
+            const today = new Date(); // Use current date for "Future" view
 
             sessions.forEach(session => {
                 const sessionDate = new Date(session.date);
